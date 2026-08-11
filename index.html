@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Scene Viewer - Avocado</title>
+    <!-- SEO and UX metadata -->
+    <meta name="description" content="View the 3D Avocado model in Augmented Reality using Google AR Scene Viewer. Easy to access from other devices in the local network.">
+    <!-- Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: radial-gradient(circle at 50% 50%, #1a1528 0%, #0d0a15 100%);
+            --accent-glow: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            --accent-green: linear-gradient(135deg, #a8ff78 0%, #78ffd6 100%);
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3cc;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Ambient background glow */
+        .ambient-glow {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(79, 172, 254, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+            top: 20%;
+            left: 20%;
+            z-index: 0;
+            pointer-events: none;
+            animation: float-slow 10s ease-in-out infinite alternate;
+        }
+
+        .ambient-glow-2 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(168, 255, 120, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+            bottom: 10%;
+            right: 15%;
+            z-index: 0;
+            pointer-events: none;
+            animation: float-slow 14s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes float-slow {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -40px) scale(1.1); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 480px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px 30px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 30px 60px rgba(79, 172, 254, 0.1), var(--shadow);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 16px;
+            background: rgba(168, 255, 120, 0.1);
+            color: #a8ff78;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 100px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(168, 255, 120, 0.2);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff 30%, #b3b3cc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .model-preview {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 50%;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.05);
+        }
+
+        .model-preview::before {
+            content: '📦';
+            font-size: 4rem;
+            filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3));
+            animation: wisp 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes wisp {
+            0% { transform: translateY(0) rotate(-5deg); }
+            100% { transform: translateY(-8px) rotate(5deg); }
+        }
+
+        /* The requested Link styled beautifully */
+        .ar-btn {
+            display: inline-block;
+            width: 100%;
+            padding: 16px 24px;
+            background: var(--accent-green);
+            color: #0c1a06;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border-radius: 14px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 24px rgba(120, 255, 214, 0.3);
+            margin-bottom: 35px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ar-btn:hover {
+            transform: scale(1.03);
+            box-shadow: 0 12px 30px rgba(120, 255, 214, 0.5);
+        }
+
+        .ar-btn:active {
+            transform: scale(0.98);
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0) 100%);
+            margin: 25px 0;
+        }
+
+        .qr-section {
+            background: rgba(255, 255, 255, 0.015);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .qr-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .qr-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .qr-container {
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .qr-container:hover {
+            transform: scale(1.05);
+        }
+
+        .ip-info {
+            margin-top: 16px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #78ffd6;
+            background: rgba(120, 255, 214, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(120, 255, 214, 0.1);
+            word-break: break-all;
+        }
+
+        .network-tips {
+            text-align: left;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-left: 3px solid #78ffd6;
+        }
+
+        .network-tips p {
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .network-tips ul {
+            padding-left: 18px;
+            line-height: 1.5;
+        }
+
+        .network-tips li {
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+    <div class="ambient-glow-2"></div>
+
+    <div class="container">
+        <div class="badge">Google Scene Viewer</div>
+        <div class="model-preview"></div>
+        <h1>armodel.glb in AR</h1>
+        <p class="subtitle">Experience your custom 3D model right in your space using Google ARCore.</p>
+
+        <!-- EXACT intent tag requested by the user, dynamically populated for your custom model -->
+        <a id="ar-link" class="ar-btn" href="#">Loading Model...</a>
+
+        <div class="divider"></div>
+
+        <div class="qr-section">
+            <div class="qr-title">Scan to View on Mobile</div>
+            <div class="qr-desc">Scan with your Android phone's camera to load the page and launch the model.</div>
+            <div class="qr-container">
+                <canvas id="qr-code"></canvas>
+            </div>
+            <div class="ip-info" id="current-url">Loading URL...</div>
+        </div>
+
+        <div class="network-tips">
+            <p>💡 Connection Instructions</p>
+            <ul>
+                <li>Ensure your phone and this computer are connected to the same local network (Wi-Fi).</li>
+                <li>Ensure your Android device has Google Play Services for AR (ARCore) installed.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Dynamically configure links and QR code pointing to the current page location and model
+        window.addEventListener('DOMContentLoaded', () => {
+            const currentUrl = window.location.href;
+            const protocol = window.location.protocol.replace(':', ''); // "http" or "https"
+            
+            // 1. Construct the absolute URL to your custom model dynamically (works on both local server and subdirectories like GitHub Pages)
+            const modelUrl = new URL('armodel.glb', window.location.href).href;
+            
+            // 2. Generate the dynamic Google AR Scene Viewer intent URL
+            const intentUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(modelUrl)}&mode=ar_only#Intent;scheme=${protocol};package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(currentUrl)};end;`;
+            
+            // 3. Update the UI button
+            const arLink = document.getElementById('ar-link');
+            arLink.href = intentUrl;
+            arLink.textContent = "armodel.glb (View in AR)";
+            
+            // 4. Render the QR code pointing to the current page location using QRious
+            const qr = new QRious({
+                element: document.getElementById('qr-code'),
+                value: currentUrl,
+                size: 160,
+                background: '#ffffff',
+                foreground: '#0d0a15',
+                level: 'H'
+            });
+
+            document.getElementById('current-url').textContent = currentUrl;
+        });
+    </script>
+</body>
+</html>
