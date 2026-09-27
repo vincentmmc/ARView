@@ -268,7 +268,7 @@
     <div class="container">
         <div class="badge">Google Scene Viewer</div>
         <div class="model-preview"></div>
-        <h1>armodel.glb in AR</h1>
+        <h1>Molly in AR</h1>
         <p class="subtitle">Experience your custom 3D model right in your space using Google ARCore.</p>
 
         <!-- EXACT intent tag requested by the user, dynamically populated for your custom model -->
@@ -289,8 +289,8 @@
             <p>💡 Connection & Compatibility</p>
             <ul>
                 <li>Ensure your phone and this computer are connected to the same local network (Wi-Fi).</li>
-                <li><strong>Android:</strong> Uses `armodel.glb` (requires Google Play Services for AR).</li>
-                <li><strong>iOS (iPhone/iPad):</strong> Uses `armodel.usdz` (Safari native support, no app required).</li>
+                <li><strong>Android:</strong> Uses `base_basic_pbr.glb` (requires Google Play Services for AR).</li>
+                <li><strong>iOS (iPhone/iPad):</strong> Uses `base_basic_pbr.usdz` (Safari native support, no app required).</li>
             </ul>
         </div>
     </div>
@@ -307,22 +307,22 @@
             
             if (isIOS) {
                 // 1. Construct the absolute URL to your custom iOS USDZ model dynamically
-                const usdzUrl = new URL('armodel.usdz', window.location.href).href;
+                const usdzUrl = new URL('base_basic_pbr.usdz', window.location.href).href;
                 
                 // 2. Set iOS AR Quick Look properties
                 arLink.href = usdzUrl;
                 arLink.setAttribute('rel', 'ar');
-                arLink.textContent = "armodel.usdz (View in iOS AR)";
+                arLink.textContent = "Molly (View in iOS AR)";
             } else {
                 // 1. Construct the absolute URL to your custom Android GLB model dynamically
-                const modelUrl = new URL('armodel.glb', window.location.href).href;
+                const modelUrl = new URL('base_basic_pbr.glb', window.location.href).href;
                 
                 // 2. Generate the dynamic Google AR Scene Viewer intent URL for Android
                 const intentUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(modelUrl)}&mode=ar_only#Intent;scheme=${protocol};package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(currentUrl)};end;`;
                 
                 // 3. Set Android Scene Viewer properties
                 arLink.href = intentUrl;
-                arLink.textContent = "armodel.glb (View in AR)";
+                arLink.textContent = "Molly (View in AR)";
             }
             
             // 4. Render the QR code pointing to the current page location using QRious
